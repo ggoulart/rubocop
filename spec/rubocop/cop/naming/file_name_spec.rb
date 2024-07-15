@@ -274,6 +274,23 @@ RSpec.describe RuboCop::Cop::Naming::FileName, :config do
         end
       RUBY
     end
+
+    context 'on a file which defines a Data without a block' do
+      include_examples 'matching module or class', <<~RUBY
+        module A
+          B = Data.define(:foo, :bar)
+        end
+      RUBY
+    end
+
+    context 'on a file which defines a Data with a block' do
+      include_examples 'matching module or class', <<~RUBY
+        module A
+          B = Data.define(:foo, :bar) do
+          end
+        end
+      RUBY
+    end
   end
 
   context 'when CheckDefinitionPathHierarchy is false' do

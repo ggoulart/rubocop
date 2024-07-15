@@ -40,7 +40,7 @@ module RuboCop
         include RangeHelp
 
         MSG_SNAKE_CASE = 'The name of this source file (`%<basename>s`) should use snake_case.'
-        MSG_NO_DEFINITION = '`%<basename>s` should define a class or module called `%<namespace>s`.'
+        MSG_NO_DEFINITION = '`%<basename>s` should define a class, module, Struct or Data called `%<namespace>s`.'
         MSG_REGEX = '`%<basename>s` should match `%<regex>s`.'
 
         SNAKE_CASE = /^[\d[[:lower:]]_.?!]+$/.freeze
@@ -50,6 +50,14 @@ module RuboCop
           {
             (casgn $_ $_        (send (const {nil? cbase} :Struct) :new ...))
             (casgn $_ $_ (block (send (const {nil? cbase} :Struct) :new ...) ...))
+          }
+        PATTERN
+
+        # @!method data_definition(node)
+        def_node_matcher :data_definition, <<~PATTERN
+          {
+            (casgn $_ $_        (send (const {nil? cbase} :Data) :define ...))
+            (casgn $_ $_ (block (send (const {nil? cbase} :Data) :define ...) ...))
           }
         PATTERN
 
@@ -163,11 +171,16 @@ module RuboCop
         end
 
         def find_definition(node)
-          node.defined_module || defined_struct(node)
+          node.defined_module || defined_struct(node) || defined_data(node)
         end
 
         def defined_struct(node)
           namespace, name = *struct_definition(node)
+          s(:const, namespace, name) if name
+        end
+
+        def defined_data(node)
+          namespace, name = *data_definition(node)
           s(:const, namespace, name) if name
         end
 
